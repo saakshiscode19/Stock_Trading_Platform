@@ -18,12 +18,12 @@ function HomePage() {
       <Hero />
       <Awards />
       <Stats />
-      <Education />
-      <Footer />
       <Pricing />
+       <Education />
       <OpenAccount />
-
-    </>
+          <Footer />
+          </>
+   
    );
 }
 
