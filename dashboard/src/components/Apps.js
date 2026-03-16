@@ -1,7 +1,15 @@
-import React from "react";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom'; // 1. Import this
+import App from './App'; // Or wherever your Dashboard/Home is rendered
 
-const Apps = () => {
-  return <h1>Apps</h1>;
-};
-
-export default Apps;
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <GeneralContextProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </GeneralContextProvider>
+  </React.StrictMode>
+);
