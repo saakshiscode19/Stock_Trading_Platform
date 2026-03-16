@@ -1,12 +1,23 @@
 require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
+const bodyParser= require('body-parser');
+const cors=require('cors');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { UserModel } = require("./model/UserModel");
+
+const { userVerification } = require("./middlewares/AuthMiddleware");
 const { HoldingsModel } = require("./model/HoldingsModel");
 const { PositionsModel } = require("./model/PositionsModel");
+const { OrdersModel }= require("./model/OrdersModel");
 
 const PORT = process.env.PORT || 3002;
 const uri = process.env.MONGO_URL;
 const app = express();
+
+app.use(cors());
+app.use(bodyParser.json());
 
 // 1. Connect to MongoDB
 mongoose.connect(uri)
@@ -54,47 +65,139 @@ mongoose.connect(uri)
 //   }
 // });
 
-app.get('/addPositions',async(req,res)=>{
-  let tempPositions=[
-  {
-    product: "CNC",
-    name: "EVEREADY",
-    qty: 2,
-    avg: 316.27,
-    price: 312.35,
-    net: "+0.58%",
-    day: "-1.24%",
-    isLoss: true,
-  },
-  {
-    product: "CNC",
-    name: "JUBLFOOD",
-    qty: 1,
-    avg: 3124.75,
-    price: 3082.65,
-    net: "+10.04%",
-    day: "-1.35%",
-    isLoss: true,
-  },
-];
-try {
-    for (let item of tempPositions) {
-      let newPosition = new PositionsModel({
-        product: item.product,
-        name: item.name,
-        qty: item.qty,
-        avg: item.avg,
-        price: item.price,
-        net: item.net,
-        day: item.day,
-        isLoss: item.isLoss,
-      });
-      await newPosition.save();
-    }
-    res.send("Done! Positions added to DB.");
+// app.get('/addPositions',async(req,res)=>{
+//   let tempPositions=[
+//   {
+//     product: "CNC",
+//     name: "EVEREADY",
+//     qty: 2,
+//     avg: 316.27,
+//     price: 312.35,
+//     net: "+0.58%",
+//     day: "-1.24%",
+//     isLoss: true,
+//   },
+//   {
+//     product: "CNC",
+//     name: "JUBLFOOD",
+//     qty: 1,
+//     avg: 3124.75,
+//     price: 3082.65,
+//     net: "+10.04%",
+//     day: "-1.35%",
+//     isLoss: true,
+//   },
+// ];
+// try {
+//     for (let item of tempPositions) {
+//       let newPosition = new PositionsModel({
+//         product: item.product,
+//         name: item.name,
+//         qty: item.qty,
+//         avg: item.avg,
+//         price: item.price,
+//         net: item.net,
+//         day: item.day,
+//         isLoss: item.isLoss,
+//       });
+//       await newPosition.save();
+//     }
+//     res.send("Done! Positions added to DB.");
+//   } catch (error) {
+//     console.error("Error saving positions:", error);
+//     res.status(500).send("An error occurred while saving to the database.");
+//   }
+// });
+
+app.get('/allHoldings',userVerification,async(req,res)=>{
+  let allHoldings=await HoldingsModel.find({});
+  res.json(allHoldings);
+});
+
+app.get('/allPositions',userVerification,async(req,res)=>{
+  let allPositions=await PositionsModel.find({});
+  res.json(allPositions);
+});
+
+app.post("/newOrder", userVerification, async (req, res) => {
+  let newOrder= new OrdersModel({
+    name: req.body.name,
+    qty: req.body.qty,
+    price: req.body.price,
+    mode: req.body.mode,
+  });
+  newOrder.save();
+  res.send("Order saved");
+});
+
+// Fetch all orders
+app.get("/allOrders", userVerification, async (req, res) => {
+  try {
+    let allOrders = await OrdersModel.find({});
+    res.json(allOrders);
   } catch (error) {
-    console.error("Error saving positions:", error);
-    res.status(500).send("An error occurred while saving to the database.");
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ message: "Error fetching orders", error });
+  }
+});
+
+app.post("/signup", async (req, res) => {
+  try {
+    const { email, username, password } = req.body;
+
+    // 1. Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // 2. Hash the password (scramble it 12 times)
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // 3. Create the new user in the database
+    const user = await UserModel.create({
+      email,
+      username,
+      password: hashedPassword,
+    });
+
+    // 4. Create the JWT Token
+    const token = jwt.sign({ id: user._id }, process.env.TOKEN_KEY, {
+      expiresIn: "3d", // Token expires in 3 days
+    });
+
+    res.status(201).json({ message: "User created successfully", success: true, token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1. Find user by email
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Incorrect email or password" });
+    }
+
+    // 2. Compare the typed password with the hashed password in DB
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Incorrect email or password" });
+    }
+
+    // 3. Generate a new token if password is correct
+    const token = jwt.sign({ id: user._id }, process.env.TOKEN_KEY, {
+      expiresIn: "3d",
+    });
+
+    res.status(200).json({ message: "Login successful", success: true, token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
