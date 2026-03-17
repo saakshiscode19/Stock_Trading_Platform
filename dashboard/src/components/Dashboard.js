@@ -8,6 +8,7 @@ import Positions from "./Positions";
 import Summary from "./Summary";
 import WatchList from "./WatchList";
 import { GeneralContextProvider } from "./GeneralContext";
+
 // Note: Removed the BuyActionWindow import!
 
 const Dashboard = () => {
@@ -25,6 +26,7 @@ const Dashboard = () => {
             <Route path="/funds" element={<Funds />} />
           </Routes>
         </div>
+        
       </GeneralContextProvider>
     </div>
   );
