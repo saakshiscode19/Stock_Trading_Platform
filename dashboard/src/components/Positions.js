@@ -6,7 +6,7 @@ const Positions = () => {
 
   useEffect(() => {
     // This fetches the live data from your working backend (Port 3002)
-    axios.get("https://stock-trading-platform-r8t9.onrender.com/allHoldings", {
+    axios.get("https://stock-trading-platform-r8t9.onrender.com/allPositions", {
     headers: {
     Authorization: `Bearer ${localStorage.getItem("token")}`, // Shows the token to the bouncer!
     },
