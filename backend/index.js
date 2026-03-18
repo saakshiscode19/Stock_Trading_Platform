@@ -16,7 +16,11 @@ const PORT = process.env.PORT || 3002;
 const uri = process.env.MONGO_URL;
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: "https://stock-trading-platform-blush.vercel.app", // Your Vercel URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
 app.use(bodyParser.json());
 
 // 1. Connect to MongoDB
