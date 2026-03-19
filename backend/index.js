@@ -16,7 +16,11 @@ const PORT = process.env.PORT || 3002;
 const uri = process.env.MONGO_URL;
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: "https://stock-trading-platform-blush.vercel.app", // Your Vercel URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
 app.use(bodyParser.json());
 
 // 1. Connect to MongoDB
@@ -141,6 +145,8 @@ app.get("/allOrders", userVerification, async (req, res) => {
   }
 });
 
+
+
 app.post("/signup", async (req, res) => {
   try {
     const { email, username, password } = req.body;
@@ -166,7 +172,7 @@ app.post("/signup", async (req, res) => {
       expiresIn: "3d", // Token expires in 3 days
     });
 
-    res.status(201).json({ message: "User created successfully", success: true, token });
+    return res.status(201).json({ message: "User created successfully", success: true, token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

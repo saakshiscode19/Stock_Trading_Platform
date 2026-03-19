@@ -72,7 +72,11 @@ const Summary = () => {
 
   useEffect(() => {
     // Fetching the real data from your backend Port 3002
-    axios.get("http://localhost:3002/allHoldings").then((res) => {
+    axios.get("https://stock-trading-platform-r8t9.onrender.com/allHoldings", {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+}).then((res) => {
       setAllHoldings(res.data); // Ensure this is res.data, not res.datasets
     });
   }, []);
